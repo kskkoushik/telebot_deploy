@@ -2,3 +2,4 @@ pyTelegramBotAPI
 pymongo 
 pillow     
 flask
+gunicorn
