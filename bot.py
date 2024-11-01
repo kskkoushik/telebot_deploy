@@ -9,6 +9,9 @@ from pymongo import MongoClient
 TEMP_IMAGE_PATH = "temp_images"
 os.makedirs(TEMP_IMAGE_PATH, exist_ok=True)
 
+def testfun():
+    return "called testfun working succesfully"
+
 urls = "mongodb+srv://kskkoushik135:LQCFjoGmTHFyIdRi@cluster0.zzxbiby.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 # Initialize MongoDB client
