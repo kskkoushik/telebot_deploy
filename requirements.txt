@@ -1,5 +1,4 @@
 pyTelegramBotAPI   
 pymongo 
 pillow     
-flask
-gunicorn
+streamlit

@@ -4,10 +4,13 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from PIL import Image
 import io
 from pymongo import MongoClient
+import streamlit as st
 
 # Define the folder to save temporary images (optional)
 TEMP_IMAGE_PATH = "temp_images"
 os.makedirs(TEMP_IMAGE_PATH, exist_ok=True)
+
+stinput = st.text_input("I am a dummy input")
 
 def testfun():
     return "called testfun working succesfully"
