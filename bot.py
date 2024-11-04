@@ -1,133 +1,171 @@
 import os
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from gradio_client import Client, handle_file
 from PIL import Image
 import io
 from pymongo import MongoClient
 import streamlit as st
 
-# Define the folder to save temporary images (optional)
-TEMP_IMAGE_PATH = "temp_images"
-os.makedirs(TEMP_IMAGE_PATH, exist_ok=True)
+# Initialize bot and Gradio client
+API_TOKEN = '7601276865:AAFZjuQb9SBaHwNdmupHuX2kkB3aNjr204E'
+GRADIO_API_URL = "kskkoushik135/image_detector"
+bot = telebot.TeleBot(API_TOKEN)
+client = Client(GRADIO_API_URL)
+mongo_url = "mongodb+srv://kskkoushik135:LQCFjoGmTHFyIdRi@cluster0.zzxbiby.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
-stinput = st.text_input("I am a dummy input")
+dummy = st.text_input("I am a dummy")
 
-def testfun():
-    return "called testfun working succesfully"
 
-urls = "mongodb+srv://kskkoushik135:LQCFjoGmTHFyIdRi@cluster0.zzxbiby.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-
-# Initialize MongoDB client
-client = MongoClient(urls)
-db = client["photo_category_db"]
+mongo_client = MongoClient(mongo_url)
+db = mongo_client["photo_category_db"]
 collection = db["images"]
 
-# Initialize the bot with your token
-API_TOKEN = '7601276865:AAFZjuQb9SBaHwNdmupHuX2kkB3aNjr204E'
-bot = telebot.TeleBot(API_TOKEN)
+user_data = {}
 
-# Define the options
-OPTIONS = [
-    "card_best_of_luck",
-    "card_congrations",
-    "card_happy_anniversy",
-    "card_happy_birthday",
-    "card_i_am_sorry",
-    "card_i_am_sorry_for_being",
-    "card_i_love_u",
-    "card_sometimes_there_r_just",
-    "card_thank_you",
-    "berillicious_cheesecake_jar",
-    "chocolate_cheesecake_jar",
-    "dessertjar_kalakand",
-    "dessertfruit_and_cream_baked_yogurt_in_blueberry_flavor",
-    "dessertfruit_and_cream_baked_yogurt_in_cranberry_flavor",
-    "new_york_cheesecake_jar",
-    "oh_fudge_dark_chocolate_almond_fudge",
-    "oh_fudge_mocha_almond_fudge_dark_chocolate_coffee",
-    "sugarfree_tiramisu_with_extra_strong_coffee_shot",
-    "_tiramisu_classic_flavour",
-    "_tiramisu_hazelnut_flavor",
-    "other_cutlery",
-    "other_delivery_bags",
-    "other_ice_gel",
-    "slice_the_uncheese_cake_blueberry",
-    "slice_the_uncheese_cake_cranberry",
-    "slice_the_uncheesecake_vanilla",
-    "snack_masala_cranberry",
-    "snack_no_nonsence_chiwada",
-    "snack_peri_peri_chiwada",
-    "topping_bluberry_syrup",
-    "topping_blueberry_crush",
-    "topping_choco_ganash",
-    "topping_cofee_ganash",
-    "topping_cranberry_crush",
-    "topping_cranberry_syrup",
-    "topping_nuts_berries",
-    "topping_roatsed_almonds",
-    "topping_roatsed_penuts",
+# Temporary directory to save downloaded images
+TEMP_IMAGE_PATH = "temp_images"
+if not os.path.exists(TEMP_IMAGE_PATH):
+    os.makedirs(TEMP_IMAGE_PATH)
+
+# Main category options
+MAIN_OPTIONS = ["Toppings", "Desserts", "Cards"]
+
+# Subcategory options
+OPTIONS_TOPPINGS = [
+    "topping_bluberry_syrup", "topping_blueberry_crush", "topping_choco_ganash",
+    "topping_cofee_ganash", "topping_cranberry_crush", "topping_cranberry_syrup",
+    "topping_nuts_berries", "topping_roatsed_almonds", "topping_roatsed_penuts",
     "topping_seeds_nuts"
 ]
 
+OPTIONS_DESSERTS = [
+    "berillicious_cheesecake_jar", "chocolate_cheesecake_jar", "dessertjar_kalakand",
+    "dessertfruit_and_cream_baked_yogurt_in_blueberry_flavor",
+    "dessertfruit_and_cream_baked_yogurt_in_cranberry_flavor", "new_york_cheesecake_jar",
+    "oh_fudge_dark_chocolate_almond_fudge", "oh_fudge_mocha_almond_fudge_dark_chocolate_coffee",
+    "sugarfree_tiramisu_with_extra_strong_coffee_shot", "_tiramisu_classic_flavour",
+    "_tiramisu_hazelnut_flavor"
+]
+
+OPTIONS_CARDS = [
+    "card_best_of_luck", "card_congrations", "card_happy_anniversy", "card_happy_birthday",
+    "card_i_am_sorry", "card_i_am_sorry_for_being", "card_i_love_u",
+    "card_sometimes_there_r_just", "card_thank_you"
+]
+
+# Handle the "/start" command
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "Hi! Send me a photo, and I'll help categorize it for you.")
+    bot.send_message(
+        message.chat.id,
+        "Welcome! Please send a photo, and I will predict the label for you."
+    )
 
+# Handle receiving a photo
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
-    # Get the photo file ID
     file_id = message.photo[-1].file_id
-    bot.send_message(message.chat.id, "Choose a category for this photo:")
-    
-    # Store the file ID in the user's session to use after category selection
-    bot.user_data = {'file_id': file_id}
+    user_data[message.chat.id] = {'file_id': file_id}
 
-    # Create inline keyboard with options
+    # Download and save the photo temporarily
+    file_info = bot.get_file(file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    temp_file_path = os.path.join(TEMP_IMAGE_PATH, f"{file_id}.jpg")
+    with open(temp_file_path, 'wb') as temp_file:
+        temp_file.write(downloaded_file)
+
+    # Use Gradio API to predict the label
+    result = client.predict(image=handle_file(temp_file_path), api_name="/predict")
+    predicted_label = result.get("label", "unknown")
+    user_data[message.chat.id]['predicted_label'] = predicted_label
+
+    # Send confirmation message with Yes/No buttons
     markup = InlineKeyboardMarkup()
-    for option in OPTIONS:
-        markup.add(InlineKeyboardButton(option, callback_data=option))
-    
-    # Send options
-    bot.send_message(message.chat.id, "Please select a category:", reply_markup=markup)
+    markup.add(InlineKeyboardButton("Yes", callback_data="yes"),
+               InlineKeyboardButton("No", callback_data="no"))
+    bot.send_message(
+        message.chat.id,
+        f"Predicted label: '{predicted_label}'. Do you want to save this label?",
+        reply_markup=markup
+    )
 
-@bot.callback_query_handler(func=lambda call: True)
-def handle_category_selection(call):
-    category = call.data
-    file_id = bot.user_data.get('file_id')
-    
-    if file_id:
-        # Download the photo
-        file_info = bot.get_file(file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        
-        # Save temporarily and convert image with Pillow
+# Handle Yes/No button responses
+@bot.callback_query_handler(func=lambda call: call.data in ["yes", "no"])
+def handle_confirmation(call):
+    chat_id = call.message.chat.id
+    if call.data == "yes":
+        file_id = user_data[chat_id]['file_id']
+        predicted_label = user_data[chat_id]['predicted_label']
         temp_file_path = os.path.join(TEMP_IMAGE_PATH, f"{file_id}.jpg")
-        with open(temp_file_path, 'wb') as temp_file:
-            temp_file.write(downloaded_file)
 
-        # Open and convert the image
+        # Convert image and prepare for MongoDB
         with Image.open(temp_file_path) as img:
-            img_converted = img.convert("L")  # Convert to grayscale or other format
-
-            # Save to a BytesIO object
             image_bytes = io.BytesIO()
-            img_converted.save(image_bytes, format="JPEG")
+            img.save(image_bytes, format="JPEG")
             image_bytes.seek(0)
 
-        # Save to MongoDB
+        # Save image and label to MongoDB
         collection.insert_one({
-            "category": category,
+            "category": predicted_label,
             "file_id": file_id,
             "image_data": image_bytes.getvalue()
         })
+        bot.send_message(chat_id, f"Photo saved in MongoDB under category '{predicted_label}'!")
+    
+    elif call.data == "no":
+        # Show main category options if user selected "No"
+        markup = InlineKeyboardMarkup()
+        for option in MAIN_OPTIONS:
+            markup.add(InlineKeyboardButton(option, callback_data=f"main_{option}"))
+        bot.send_message(chat_id, "Please select a main category:", reply_markup=markup)
 
-        # Clean up temporary file
-        os.remove(temp_file_path)
-        
-        bot.answer_callback_query(call.id, f"Photo saved under '{category}' category in MongoDB!")
-        bot.send_message(call.message.chat.id, f"Photo saved in '{category}' category in MongoDB!")
+# Handle main category selection
+@bot.callback_query_handler(func=lambda call: call.data.startswith("main_"))
+def handle_main_category_selection(call):
+    main_category = call.data.split("_")[1]
+    chat_id = call.message.chat.id
+
+    # Show specific options based on the main category selected
+    if main_category == "Toppings":
+        options = OPTIONS_TOPPINGS
+    elif main_category == "Desserts":
+        options = OPTIONS_DESSERTS
+    elif main_category == "Cards":
+        options = OPTIONS_CARDS
     else:
-        bot.send_message(call.message.chat.id, "No photo found to save.")
+        bot.send_message(chat_id, "Invalid category selection.")
+        return
 
-# Start polling
+    markup = InlineKeyboardMarkup()
+    for option in options:
+        markup.add(InlineKeyboardButton(option, callback_data=f"sub_{option}"))
+    bot.send_message(chat_id, f"Please select a specific option from '{main_category}':", reply_markup=markup)
+
+# Handle specific option selection and save to MongoDB
+@bot.callback_query_handler(func=lambda call: call.data.startswith("sub_"))
+def handle_specific_option_selection(call):
+    category = call.data.split("_")[1]
+    chat_id = call.message.chat.id
+    file_id = user_data[chat_id]['file_id']
+    temp_file_path = os.path.join(TEMP_IMAGE_PATH, f"{file_id}.jpg")
+
+    # Convert and save the image in MongoDB with the selected category
+    with Image.open(temp_file_path) as img:
+        image_bytes = io.BytesIO()
+        img.save(image_bytes, format="JPEG")
+        image_bytes.seek(0)
+
+    collection.insert_one({
+        "category": category,
+        "file_id": file_id,
+        "image_data": image_bytes.getvalue()
+    })
+    bot.send_message(chat_id, f"Photo saved in MongoDB under '{category}' category.")
+
+    # Clean up temporary file
+    if os.path.exists(temp_file_path):
+        os.remove(temp_file_path)
+
+# Start polling for new messages
 bot.infinity_polling()
