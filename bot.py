@@ -123,7 +123,7 @@ OPTIONS_CARDS =  [
 def send_welcome(message):
     bot.send_message(
         message.chat.id,
-        "Welcome! Please send a photo, and I will predict the label for you."
+        "Welcome! Please send me a photo of product"
     )
 
 # Handle receiving a photo
@@ -150,7 +150,7 @@ def handle_photo(message):
                InlineKeyboardButton("No", callback_data="no"))
     bot.send_message(
         message.chat.id,
-        f"Predicted label: '{predicted_label}'. Do you want to save this label?",
+        f"Predicted label: '{predicted_label}'. Is this correct?",
         reply_markup=markup
     )
 
@@ -175,7 +175,8 @@ def handle_confirmation(call):
             "file_id": file_id,
             "image_data": image_bytes.getvalue()
         })
-        bot.send_message(chat_id, f"Photo saved in MongoDB under category '{predicted_label}'!")
+        bot.send_message(chat_id, f"Photo saved under category '{predicted_label}'!")
+        bot.send_message(chat_id, f"Photo with the id {file_id}'!")
     
     elif call.data == "no":
         # Show main category options if user selected "No"
@@ -229,8 +230,8 @@ def handle_specific_option_selection(call):
         "file_id": file_id,
         "image_data": image_bytes.getvalue()
     })
-    bot.send_message(chat_id, f"Photo with the id {file_id}'!")
-    bot.send_message(chat_id, f"Photo saved under '{category}' category.")
+    bot.send_message(chat_id, f"Photo with the id {file_id}")
+    bot.send_message(chat_id, f"Photo saved under '{category}'")
 
     # Clean up temporary file
     if os.path.exists(temp_file_path):
