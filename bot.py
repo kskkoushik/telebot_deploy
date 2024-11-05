@@ -35,9 +35,6 @@ MAIN_OPTIONS = ["Desserts", "Mithai Scoops" ,"Savories" , "ADD-ONs", "Cards"]
 OPTIONS_MITHAI_SCOOPS = [
     "Kalakand Jar",
     "Kalakand Jar with Blueberry & Almond Topping",
-    "Blueberry-Kalakand Sandwich jar",
-    "Mango-Kalakand Sandwich jar",
-    
     "Shrikhand - Kesar Elaichi Flavour",
     "Mixed Berry Shrikhand",
     "Pista Shrikhand"
@@ -54,24 +51,12 @@ OPTIONS_DESSERTS = [
     "New York Cheesecake With Almond Base - Jar",
     "Chocolate infused Cheesecake with Almond base - Jar",
     "Blueberry Cheesecake With Almond base - Jar",
-    "Mango Cheesecake With Almond Base - Jar",
-    
     "The Un-cheese Cake - Blueberry",
     "The Un-cheese Cake - Cranberry",
     "The Un-cheese Cake - Vanilla",
-    "The Un-cheese Cake - Rose",
-    "The Uncheese Cake - Strawberry",
-    "The Un-Cheese-Cake, Mango flavor",
-    
     "Lean Dessert: Blueberry and Cream Baked Yogurt",
     "Lean Dessert: Cranberry and Cream Baked Yogurt",
-    "Lean Dessert: Vanilla and Cream Baked Yogurt",
-    "Lean Dessert: Strawberry and Cream Baked Yogurt",
-    "Lean Dessert: Mango and Cream Baked Yogurt",
-    
-    "Choco-Almond Brownie - Jar",
-    "Blueberry Choco-Almond Brownie - Jar",
-    "Nutty Choco-Almond Brownie - Jar"
+    "Lean Dessert: Vanilla and Cream Baked Yogurt"
 ]
 
 
@@ -91,10 +76,7 @@ OPTIONS_ADDONS = [
     "Crushed Cranberries",
     "Nuts & Berries mix",
     "Nuts & Seeds mix",
-    "Roasted Crushed almonds",
-    "Roasted Crushed Peanuts",
-    "Chocolate Ganache",
-    "Coffee Ganache"
+    "Roasted Crushed almonds"
 ]
 
 OPTIONS_CARDS =  [
@@ -175,8 +157,22 @@ def handle_confirmation(call):
             "file_id": file_id,
             "image_data": image_bytes.getvalue()
         })
-        bot.send_message(chat_id, f"Photo saved under category '{predicted_label}'!")
-        bot.send_message(chat_id, f"Photo with the id {file_id}'!")
+
+        category = ''
+
+        if predicted_label in OPTIONS_ADDONS:
+            category = "ADD-ONs"
+        elif predicted_label in OPTIONS_CARDS:
+            category = "Cards"
+        elif predicted_label in OPTIONS_DESSERTS:
+            category = "Desserts"
+        elif predicted_label in OPTIONS_MITHAI_SCOOPS:
+            category = "Mithai Scoops"
+        elif predicted_label in OPTIONS_SAVORIES:
+            category = "Savories"                
+
+        bot.send_message(chat_id, f"Saved. Category : {category} , Product : '{predicted_label} , ID: {file_id}")
+       
     
     elif call.data == "no":
         # Show main category options if user selected "No"
@@ -214,7 +210,7 @@ def handle_main_category_selection(call):
 # Handle specific option selection and save to MongoDB
 @bot.callback_query_handler(func=lambda call: call.data.startswith("sub_"))
 def handle_specific_option_selection(call):
-    category = call.data.split("_")[1]
+    product = call.data.split("_")[1]
     chat_id = call.message.chat.id
     file_id = user_data[chat_id]['file_id']
     temp_file_path = os.path.join(TEMP_IMAGE_PATH, f"{file_id}.jpg")
@@ -226,13 +222,25 @@ def handle_specific_option_selection(call):
         image_bytes.seek(0)
 
     collection.insert_one({
-        "category": category,
+        "category": product,
         "file_id": file_id,
         "image_data": image_bytes.getvalue()
     })
-    bot.send_message(chat_id, f"Photo with the id {file_id}")
-    bot.send_message(chat_id, f"Photo saved under '{category}'")
+    category = ''
 
+    if product in OPTIONS_ADDONS:
+        category = "ADD-ONs"
+    elif product in OPTIONS_CARDS:
+        category = "Cards"
+    elif product in OPTIONS_DESSERTS:
+        category = "Desserts"
+    elif product in OPTIONS_MITHAI_SCOOPS:
+        category = "Mithai Scoops"
+    elif product in OPTIONS_SAVORIES:
+        category = "Savories"                
+
+    bot.send_message(chat_id, f"Saved. Category : {category} , Product : '{product} , ID: {file_id}")
+       
     # Clean up temporary file
     if os.path.exists(temp_file_path):
         os.remove(temp_file_path)
