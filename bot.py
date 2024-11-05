@@ -29,7 +29,7 @@ if not os.path.exists(TEMP_IMAGE_PATH):
     os.makedirs(TEMP_IMAGE_PATH)
 
 # Main category options
-MAIN_OPTIONS = ["Desserts", "Mithai Scoops" ,"Savories" , "ADD-ONs", "Cards"]
+MAIN_OPTIONS = ["Desserts", "Mithai Scoops" ,"Savories" , "Toppings", "Cards", "Others"]
 
 # Subcategory options
 OPTIONS_MITHAI_SCOOPS = [
@@ -44,10 +44,8 @@ OPTIONS_DESSERTS = [
     "Tiramisu - Classic Flavour",
     "Tiramisu - Hazelnut Flavor",
     "Tiramisu - Strong Coffee",
-    
     "Oh Fudge! Chocolate Almond",
     "Oh Fudge! Mocha Almond Fudge",
-    
     "New York Cheesecake With Almond Base - Jar",
     "Chocolate infused Cheesecake with Almond base - Jar",
     "Blueberry Cheesecake With Almond base - Jar",
@@ -67,7 +65,7 @@ OPTIONS_SAVORIES  = [
     "Masala Cranberries"
 ]
 
-OPTIONS_ADDONS = [
+OPTIONS_TOPPINGS = [
     "Strawberry Compote",
     "Blueberry Compote",
     "Cranberry Compote",
@@ -76,25 +74,28 @@ OPTIONS_ADDONS = [
     "Crushed Cranberries",
     "Nuts & Berries mix",
     "Nuts & Seeds mix",
-    "Roasted Crushed almonds"
+    "Roasted Crushed almonds",
+    "Kalakand Topping",
+    "Blueberry & Almond Topping"
 ]
 
 OPTIONS_CARDS =  [
-    "Product replacement Card",
+    "Product replacement",
     "I'm sorry",
-    "Best of luck to you card",
-    "Congratulations card",
+    "Best of luck to you",
+    "Congratulations",
     "Sometimes there are no just words",
-    "Happy anniversary card",
-    "I love you card",
-    "Thank you card",
-    "Happy birthday to you card",
-    "Brand's Delivery Bag",
+    "Happy anniversary",
+    "I love you",
+    "Thank you",
+    "Happy birthday to you"
+]
+
+OPTIONS_OTHERS = [
+    "Delivery Bag",
     "Ice gels",
     "Cutlery"
 ]
-
-
 
 
 
@@ -113,6 +114,7 @@ def send_welcome(message):
 def handle_photo(message):
     file_id = message.photo[-1].file_id
     user_data[message.chat.id] = {'file_id': file_id}
+    # username = message.from_user.username
 
     # Download and save the photo temporarily
     file_info = bot.get_file(file_id)
@@ -160,8 +162,8 @@ def handle_confirmation(call):
 
         category = ''
 
-        if predicted_label in OPTIONS_ADDONS:
-            category = "ADD-ONs"
+        if predicted_label in OPTIONS_TOPPINGS:
+            category = "Toppings"
         elif predicted_label in OPTIONS_CARDS:
             category = "Cards"
         elif predicted_label in OPTIONS_DESSERTS:
@@ -169,7 +171,9 @@ def handle_confirmation(call):
         elif predicted_label in OPTIONS_MITHAI_SCOOPS:
             category = "Mithai Scoops"
         elif predicted_label in OPTIONS_SAVORIES:
-            category = "Savories"                
+            category = "Savories"
+        elif predicted_label in OPTIONS_OTHERS:
+            category = "Others"
 
         bot.send_message(chat_id, f"Saved. Category : {category} , Product : '{predicted_label} , ID: {file_id}")
        
@@ -196,8 +200,10 @@ def handle_main_category_selection(call):
         options = OPTIONS_CARDS
     elif main_category == "Savories":
         options = OPTIONS_SAVORIES
-    elif main_category == "ADD-ONs":
-        options = OPTIONS_ADDONS        
+    elif main_category == "Toppings":
+        options = OPTIONS_TOPPINGS    
+    elif main_category == "Others":
+        options = OPTIONS_OTHERS    
     else:
         bot.send_message(chat_id, "Invalid category selection.")
         return
@@ -228,8 +234,8 @@ def handle_specific_option_selection(call):
     })
     category = ''
 
-    if product in OPTIONS_ADDONS:
-        category = "ADD-ONs"
+    if product in OPTIONS_TOPPINGS:
+        category = "Toppings"
     elif product in OPTIONS_CARDS:
         category = "Cards"
     elif product in OPTIONS_DESSERTS:
@@ -237,7 +243,9 @@ def handle_specific_option_selection(call):
     elif product in OPTIONS_MITHAI_SCOOPS:
         category = "Mithai Scoops"
     elif product in OPTIONS_SAVORIES:
-        category = "Savories"                
+        category = "Savories"
+    elif product in OPTIONS_OTHERS:
+        category = "Others"
 
     bot.send_message(chat_id, f"Saved. Category : {category} , Product : '{product} , ID: {file_id}")
        
