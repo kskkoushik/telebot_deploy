@@ -29,30 +29,94 @@ if not os.path.exists(TEMP_IMAGE_PATH):
     os.makedirs(TEMP_IMAGE_PATH)
 
 # Main category options
-MAIN_OPTIONS = ["Toppings", "Desserts", "Cards"]
+MAIN_OPTIONS = ["Desserts", "Mithai Scoops" ,"Savories" , "ADD-ONs", "Cards"]
 
 # Subcategory options
-OPTIONS_TOPPINGS = [
-    "topping_bluberry_syrup", "topping_blueberry_crush", "topping_choco_ganash",
-    "topping_cofee_ganash", "topping_cranberry_crush", "topping_cranberry_syrup",
-    "topping_nuts_berries", "topping_roatsed_almonds", "topping_roatsed_penuts",
-    "topping_seeds_nuts"
+OPTIONS_MITHAI_SCOOPS = [
+    "Kalakand Jar",
+    "Kalakand Jar with Blueberry & Almond Topping",
+    "Blueberry-Kalakand Sandwich jar",
+    "Mango-Kalakand Sandwich jar",
+    
+    "Shrikhand - Kesar Elaichi Flavour",
+    "Mixed Berry Shrikhand",
+    "Pista Shrikhand"
 ]
 
 OPTIONS_DESSERTS = [
-    "berillicious_cheesecake_jar", "chocolate_cheesecake_jar", "dessertjar_kalakand",
-    "dessertfruit_and_cream_baked_yogurt_in_blueberry_flavor",
-    "dessertfruit_and_cream_baked_yogurt_in_cranberry_flavor", "new_york_cheesecake_jar",
-    "oh_fudge_dark_chocolate_almond_fudge", "oh_fudge_mocha_almond_fudge_dark_chocolate_coffee",
-    "sugarfree_tiramisu_with_extra_strong_coffee_shot", "_tiramisu_classic_flavour",
-    "_tiramisu_hazelnut_flavor"
+    "Tiramisu - Classic Flavour",
+    "Tiramisu - Hazelnut Flavor",
+    "Tiramisu - Strong Coffee",
+    
+    "Oh Fudge! Chocolate Almond",
+    "Oh Fudge! Mocha Almond Fudge",
+    
+    "New York Cheesecake With Almond Base - Jar",
+    "Chocolate infused Cheesecake with Almond base - Jar",
+    "Blueberry Cheesecake With Almond base - Jar",
+    "Mango Cheesecake With Almond Base - Jar",
+    
+    "The Un-cheese Cake - Blueberry",
+    "The Un-cheese Cake - Cranberry",
+    "The Un-cheese Cake - Vanilla",
+    "The Un-cheese Cake - Rose",
+    "The Uncheese Cake - Strawberry",
+    "The Un-Cheese-Cake, Mango flavor",
+    
+    "Lean Dessert: Blueberry and Cream Baked Yogurt",
+    "Lean Dessert: Cranberry and Cream Baked Yogurt",
+    "Lean Dessert: Vanilla and Cream Baked Yogurt",
+    "Lean Dessert: Strawberry and Cream Baked Yogurt",
+    "Lean Dessert: Mango and Cream Baked Yogurt",
+    
+    "Choco-Almond Brownie - Jar",
+    "Blueberry Choco-Almond Brownie - Jar",
+    "Nutty Choco-Almond Brownie - Jar"
 ]
 
-OPTIONS_CARDS = [
-    "card_best_of_luck", "card_congrations", "card_happy_anniversy", "card_happy_birthday",
-    "card_i_am_sorry", "card_i_am_sorry_for_being", "card_i_love_u",
-    "card_sometimes_there_r_just", "card_thank_you"
+
+OPTIONS_SAVORIES  = [
+    "No-nonsense Chiwda",
+    "Health trail-mix",
+    "Mathari in my mouth Methi Flavor",
+    "Masala Cranberries"
 ]
+
+OPTIONS_ADDONS = [
+    "Strawberry Compote",
+    "Blueberry Compote",
+    "Cranberry Compote",
+    "Crushed Strawberries",
+    "Crushed Blueberries",
+    "Crushed Cranberries",
+    "Nuts & Berries mix",
+    "Nuts & Seeds mix",
+    "Roasted Crushed almonds",
+    "Roasted Crushed Peanuts",
+    "Chocolate Ganache",
+    "Coffee Ganache"
+]
+
+OPTIONS_CARDS =  [
+    "Product replacement Card",
+    "I'm sorry",
+    "Best of luck to you card",
+    "Congratulations card",
+    "Sometimes there are no just words",
+    "Happy anniversary card",
+    "I love you card",
+    "Thank you card",
+    "Happy birthday to you card",
+    "Brand's Delivery Bag",
+    "Ice gels",
+    "Cutlery"
+]
+
+
+
+
+
+
 
 # Handle the "/start" command
 @bot.message_handler(commands=['start'])
@@ -127,12 +191,16 @@ def handle_main_category_selection(call):
     chat_id = call.message.chat.id
 
     # Show specific options based on the main category selected
-    if main_category == "Toppings":
-        options = OPTIONS_TOPPINGS
+    if main_category == "Mithai Scoops":
+        options = OPTIONS_MITHAI_SCOOPS
     elif main_category == "Desserts":
         options = OPTIONS_DESSERTS
     elif main_category == "Cards":
         options = OPTIONS_CARDS
+    elif main_category == "Savories":
+        options = OPTIONS_SAVORIES
+    elif main_category == "ADD-ONs":
+        options = OPTIONS_ADDONS        
     else:
         bot.send_message(chat_id, "Invalid category selection.")
         return
@@ -161,7 +229,8 @@ def handle_specific_option_selection(call):
         "file_id": file_id,
         "image_data": image_bytes.getvalue()
     })
-    bot.send_message(chat_id, f"Photo saved in MongoDB under '{category}' category.")
+    bot.send_message(chat_id, f"Photo with the id {file_id}'!")
+    bot.send_message(chat_id, f"Photo saved under '{category}' category.")
 
     # Clean up temporary file
     if os.path.exists(temp_file_path):
