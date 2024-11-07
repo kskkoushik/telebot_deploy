@@ -1,1 +1,1 @@
-Create a .env file and add MONGO_URL=<URL to monogo cluster>
+Create a .env file and add MONGO_URL="INSERT-MONGO-URL-HERE"
