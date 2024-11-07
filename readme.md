@@ -1,0 +1,1 @@
+Create a .env file and add MONGO_URL=<URL to monogo cluster>

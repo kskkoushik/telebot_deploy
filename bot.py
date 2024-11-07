@@ -6,13 +6,16 @@ from PIL import Image
 import io
 from pymongo import MongoClient
 import streamlit as st
+from dotenv import load_dotenv
+import datetime
 
-# Initialize bot and Gradio client
+load_dotenv()
+
 API_TOKEN = '7601276865:AAFZjuQb9SBaHwNdmupHuX2kkB3aNjr204E'
 GRADIO_API_URL = "kskkoushik135/image_detector"
 bot = telebot.TeleBot(API_TOKEN)
 client = Client(GRADIO_API_URL)
-mongo_url = "mongodb+srv://kskkoushik135:LQCFjoGmTHFyIdRi@cluster0.zzxbiby.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+mongo_url = os.getenv("MONGO_URL")
 
 dummy = st.text_input("I am a dummy")
 
@@ -114,7 +117,9 @@ def send_welcome(message):
 def handle_photo(message):
     file_id = message.photo[-1].file_id
     user_data[message.chat.id] = {'file_id': file_id}
-    # username = message.from_user.username
+    user_data["name"] = (message.from_user.first_name + " " + message.from_user.last_name).strip()
+    print (user_data["name"])
+    user_data['message'] = message
 
     # Download and save the photo temporarily
     file_info = bot.get_file(file_id)
@@ -153,13 +158,6 @@ def handle_confirmation(call):
             img.save(image_bytes, format="JPEG")
             image_bytes.seek(0)
 
-        # Save image and label to MongoDB
-        collection.insert_one({
-            "category": predicted_label,
-            "file_id": file_id,
-            "image_data": image_bytes.getvalue()
-        })
-
         category = ''
 
         if predicted_label in OPTIONS_TOPPINGS:
@@ -175,7 +173,17 @@ def handle_confirmation(call):
         elif predicted_label in OPTIONS_OTHERS:
             category = "Others"
 
-        bot.send_message(chat_id, f"Saved. Category : {category} , Product : '{predicted_label} , ID: {file_id}")
+        # Save image and label to MongoDB
+        collection.insert_one({
+            "annotator": user_data["name"],
+            "category": category,
+            "product": predicted_label,
+            "file_id": file_id,
+            "image_data": image_bytes.getvalue(),
+            "annoted_at": datetime.datetime.now()
+        })
+
+        bot.reply_to(user_data['message'], f"Saved.\nCategory: {category}\nProduct: '{predicted_label}\nID: {file_id}\nAnnotator: {user_data['name']}")
        
     
     elif call.data == "no":
@@ -227,11 +235,6 @@ def handle_specific_option_selection(call):
         img.save(image_bytes, format="JPEG")
         image_bytes.seek(0)
 
-    collection.insert_one({
-        "category": product,
-        "file_id": file_id,
-        "image_data": image_bytes.getvalue()
-    })
     category = ''
 
     if product in OPTIONS_TOPPINGS:
@@ -247,8 +250,18 @@ def handle_specific_option_selection(call):
     elif product in OPTIONS_OTHERS:
         category = "Others"
 
-    bot.send_message(chat_id, f"Saved. Category : {category} , Product : '{product} , ID: {file_id}")
-       
+    # Save image and label to MongoDB
+    collection.insert_one({
+        "annotator": user_data["name"],
+        "category": category,
+        "product": product,
+        "file_id": file_id,
+        "image_data": image_bytes.getvalue(),
+        "annoted_at": datetime.datetime.now()
+    })
+    
+    bot.reply_to(user_data['message'], f"Saved.\nCategory: {category}\nProduct: '{product}\nID: {file_id}\nAnnotator: {user_data['name']}")
+
     # Clean up temporary file
     if os.path.exists(temp_file_path):
         os.remove(temp_file_path)

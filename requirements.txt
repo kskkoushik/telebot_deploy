@@ -3,3 +3,4 @@ pymongo
 pillow     
 streamlit
 gradio_client
+python-dotenv
